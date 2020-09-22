@@ -69,3 +69,32 @@ https://www.jetbrains.com/help/go/webassembly-project.html
 Go 语言可以通过协程实现异步，进而简化编程；
 
 见：https://github.com/JasonkayZK/go-assembly/tree/callback-function
+
+<BR/>
+
+## 进一步的尝试
+
+### 6.1 工具框架
+
+-   WebAssembly 的二进制分析工具 [WebAssembly Code Explorer](https://wasdk.github.io/wasmcodeexplorer/)
+-   使用NodeJs 或浏览器测试 Go Wasm 代码 [Github Wiki](https://github.com/golang/go/wiki/WebAssembly#executing-webassembly-with-nodejs)
+-   借鉴 Vue 实现的 Golang WebAssembly 前端框架 [Vugu](https://www.vugu.org/doc/start)，完全使用 Go，不用写任何的 JavaScript 代码。
+
+### 6.2 Demo/项目
+
+-   使用 Go Assembly 前端渲染的一些[例子](https://stdiopt.github.io/gowasm-experiments/)
+-   [jsgo](https://github.com/dave/jsgo) 这个项目汇聚一些小而精的项目，包括 [2048](https://jsgo.io/hajimehoshi/ebiten/examples/2048)，[俄罗斯方块](https://jsgo.io/hajimehoshi/ebiten/examples/blocks)等游戏，还有证明 Go 可以完整开发前端项目的 [TodoMVC](https://jsgo.io/dave/todomvc)
+
+### 6.3 相关文档
+
+-   [syscall/js 官方文档 - golang.org](https://golang.org/pkg/syscall/js)
+-   [Go WebAssembly 官方文档 - github.com](https://github.com/golang/go/wiki/WebAssembly)
+
+<BR/>
+
+## 附录
+
+本文转自：
+
+-   [Go WebAssembly (Wasm) 简明教程](https://geektutu.com/post/quick-go-wasm.html)
+
