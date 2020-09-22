@@ -1,32 +1,19 @@
 # Go-Assembly简明教程
 
-## 操作DOM
+## 回调函数(Callback Functions)
 
-在[注册函数(Register Functions)](https://github.com/JasonkayZK/go-assembly/tree/register-function)例子中，仅仅是注册了全局函数 fibFunc，事件注册，调用，对 DOM 元素的操作都是在 HTML中通过原生的 JavaScript 函数实现的。
+在 JavaScript 中，异步+回调是非常常见的，比如请求一个 Restful API，注册一个回调函数，待数据获取到，再执行回调函数的逻辑，这个期间程序可以继续做其他的事情，Go 语言可以通过协程实现异步。
 
-这些事情，能不能全部在 Go 语言中完成呢？答案可以。
+假设 fib 的计算非常耗时，那么可以启动注册一个回调函数，待 fib 计算完成后，再把计算结果显示出来。
 
-首先修改 index.html，删除事件注册部分和 对 DOM 元素的操作部分。
-
-```html
-<html>
-...
-<body>
-	<input id="num" type="number" />
-	<button id="btn">Click</button>
-	<p id="ans">1</p>
-</body>
-</html>
-```
-
-修改 main.go：
+我们先修改 main.go，使得 fibFunc 支持传入回调函数。
 
 ```go
 package main
 
 import (
-	"strconv"
 	"syscall/js"
+	"time"
 )
 
 func fib(i int) int {
@@ -36,31 +23,46 @@ func fib(i int) int {
 	return fib(i-1) + fib(i-2)
 }
 
-var (
-	document = js.Global().Get("document")
-	numEle   = document.Call("getElementById", "num")
-	ansEle   = document.Call("getElementById", "ans")
-	btnEle   = js.Global().Get("btn")
-)
-
 func fibFunc(this js.Value, args []js.Value) interface{} {
-	v := numEle.Get("value")
-	if num, err := strconv.Atoi(v.String()); err == nil {
-		ansEle.Set("innerHTML", js.ValueOf(fib(num)))
-	}
+	callback := args[len(args)-1]
+	go func() {
+		time.Sleep(3 * time.Second)
+		v := fib(args[0].Int())
+		callback.Invoke(v)
+	}()
+
+	js.Global().Get("ans").Set("innerHTML", "Waiting 3s...")
 	return nil
 }
 
 func main() {
 	done := make(chan int, 0)
-	btnEle.Call("addEventListener", "click", js.FuncOf(fibFunc))
+	js.Global().Set("fibFunc", js.FuncOf(fibFunc))
 	<-done
 }
 ```
 
--   通过 `js.Global().Get("btn")` 或 `document.Call("getElementById", "num")` 两种方式获取到 DOM 元素。
--   btnEle 调用 `addEventListener` 为 btn 绑定点击事件 fibFunc。
--   在 fibFunc 中使用 `numEle.Get("value")` 获取到 numEle 的值（字符串），转为整型并调用 fib 计算出结果。
--   ansEle 调用 `Set("innerHTML", ...)` 渲染计算结果。
+-   假设调用 fibFunc 时，回调函数作为最后一个参数，那么**通过 args[len(args)-1] 便可以获取到该函数**。这与其他类型参数的传递并无区别。
+-   使用 `go func()` 启动子协程，调用 fib 计算结果，计算结束后，调用回调函数 `callback`，并将计算结果传递给回调函数，使用 time.Sleep() 模拟 3s 的耗时操作。
+-   计算结果出来前，先在界面上显示 `Waiting 3s...`
 
-重新编译 main.go，访问 localhost:9999，效果与之前是一致的！
+接下来我们修改 index.html，为按钮添加点击事件，调用 fibFunc：
+
+```html
+<html>
+...
+<body>
+	<input id="num" type="number" />
+	<button id="btn" onclick="fibFunc(num.value * 1, (v)=> ans.innerHTML=v)">Click</button>
+	<p id="ans"></p>
+</body>
+</html>
+```
+
+-   为 btn 注册了点击事件，第一个参数是待计算的数字，从 num 输入框获取。
+-   第二个参数是一个回调函数，将参数 v 显示在 ans 文本框中。
+
+接下来，重新编译 main.go，访问 localhost:9999：
+
+随便输入一个数字，点击 Click。页面会先显示 `Waiting 3s...`，3s过后显示计算结果；
+
