@@ -42,3 +42,9 @@ https://www.jetbrains.com/help/go/webassembly-project.html
 
 见：https://github.com/JasonkayZK/go-assembly/tree/register-function
 
+## 操作DOM
+
+在Go中操作DOM；
+
+见：https://github.com/JasonkayZK/go-assembly/tree/operate-dom
+
