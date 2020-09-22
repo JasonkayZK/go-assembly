@@ -1,42 +1,77 @@
 # Go-Assembly简明教程
 
-## WebAssembly 简介
+## 注册函数(Register Functions)
 
->   WebAssembly是一种新的编码方式，可以在现代的网络浏览器中运行；
+在 Go 语言中调用 JavaScript 函数是一方面，另一方面，如果仅仅是使用 WebAssembly 替代性能要求高的模块，那么就需要注册函数，以便其他 JavaScript 代码调用。
+
+假设我们需要注册一个计算斐波那契数列的函数，可以这么实现：
+
+```go
+// main.go
+package main
+
+import "syscall/js"
+
+func fib(i int) int {
+	if i == 0 || i == 1 {
+		return 1
+	}
+	return fib(i-1) + fib(i-2)
+}
+
+func fibFunc(this js.Value, args []js.Value) interface{} {
+	return js.ValueOf(fib(args[0].Int()))
+}
+
+func main() {
+	done := make(chan int, 0)
+	js.Global().Set("fibFunc", js.FuncOf(fibFunc))
+	<-done
+}
+```
+
+-   fib 是一个普通的 Go 函数，通过递归计算第 i 个斐波那契数，接收一个 int 入参，返回值也是 int。
+-   定义了 fibFunc 函数，为 fib 函数套了一个壳，从 args[0] 获取入参，计算结果用 js.ValueOf 包装，并返回。
+-   使用 js.Global().Set() 方法，将注册函数 fibFunc 到全局，以便在浏览器中能够调用。
+
+`js.Value` 可以将 Js 的值转换为 Go 的值，比如 args[0].Int()，则是转换为 Go 语言中的整型。
+
+`js.ValueOf`，则用来将 Go 的值，转换为 Js 的值。
+
+另外，注册函数的时候，使用 js.FuncOf 将函数转换为 `Func` 类型，只有 Func 类型的函数，才能在 JavaScript 中调用。可以认为这是 Go 与 JavaScript 之间的接口/约定。
+
+`js.Func()` 接受一个函数类型作为其参数，该函数的定义必须是：
+
+```go
+func(this Value, args []Value) interface{}
+// this 即 JavaScript 中的 this
+// args 是在 JavaScript 中调用该函数的参数列表。
+// 返回值需用 js.ValueOf 映射成 JavaScript 的值
+```
+
+在 main 函数中，创建了信道(chan) done，阻塞主协程(goroutine)；
+
+fibFunc 如果在 JavaScript 中被调用，会开启一个新的子协程执行：
+
+>   A wrapped function triggered during a call from Go to JavaScript gets executed on the same goroutine.
 >
->   它是一种低级的类汇编语言，具有紧凑的二进制格式，可以接近原生的性能运行，并为诸如C / C  ++等语言提供一个编译目标，以便它们可以在Web上运行；
->
->   它也被设计为可以与JavaScript共存，允许两者一起工作。  —— [MDN web docs - mozilla.org](https://developer.mozilla.org/zh-CN/docs/WebAssembly)
+>   A wrapped function triggered by  JavaScript’s event loop gets executed on an extra goroutine.  —— [FuncOf - golang.org](https://golang.org/pkg/syscall/js/#FuncOf)
 
-从 MDN 的介绍中，我们可以得出几个结论：
+接下来，修改之前的 index.html，在其中添加一个输入框(num)，一个按钮(btn) 和一个文本框(ans，用来显示计算结果)，并给按钮添加了一个点击事件，调用 fibFunc，并将计算结果显示在文本框(ans)中。
 
--   1）WebAssembly 是一种二进制编码格式，而不是一门新的语言；
--   2) WebAssembly 不是为了取代 JavaScript，而是一种补充（至少现阶段是这样），结合 WebAssembly 的性能优势，很大可能集中在对性能要求高（例如游戏，AI），或是对交互体验要求高（例如移动端）的场景；
--   3）C/C++ 等语言可以编译 WebAssembly 的目标文件，也就是说，其他语言可以通过编译器支持，而写出能够在浏览器前端运行的代码；
+```html
+<html>
+...
+<body>
+	<input id="num" type="number" />
+	<button id="btn" onclick="ans.innerHTML=fibFunc(num.value * 1)">Click</button>
+	<p id="ans">1</p>
+</body>
+</html>
+```
 
-Go 语言在 1.11 版本(2018年8月) 加入了对 WebAssembly (Wasm) 的原生支持，使用 Go 语言开发  WebAssembly 相关的应用变得更加地简单，Go 语言的内建支持是 Go 语言进军前端的一个重要的里程碑。
+使用之前的命令重新编译 main.go，并在 9999 端口启动 Web 服务，如果我们已经将命令写在 Makefile 中了，只需要运行 `make` 即可；
 
-在这之前，如果想使用 Go  语言开发前端，需要使用 [GopherJS](https://github.com/gopherjs/gopherjs)，GopherJS 是一个编译器，可以将 Go 语言转换成可以在浏览器中运行的 JavaScript 代码。**新版本的 Go 则直接将 Go 代码编译为 wasm  二进制文件，而不再需要转为 JavaScript 代码。**更巧的是，实现 GopherJS 和在 Go 语言中内建支持 WebAssembly  的是同一拨人。
+接下来访问 localhost:9999，可以看到效果：
 
-**Go 语言实现的函数可以直接导出供 JavaScript 代码调用**
-
-**同时，Go 语言内置了 [syscall/js](https://github.com/golang/go/tree/master/src/syscall/js) 包，可以在 Go 语言中直接调用 JavaScript 函数，包括对 DOM 树的操作!**
-
-## Goland中使用Web-Assembly
-
-在Goland中进行开发时需要进行一些简单的配置；
-
-Goland官方文档也说明了如何配置：
-
-https://www.jetbrains.com/help/go/webassembly-project.html
-
-## Hello World
-
-使用wasm实现的一个通知alert的例子；
-
-见：https://github.com/JasonkayZK/go-assembly/tree/hello-world
-
-
-
-
-
+输入一个数字，点击`Click`，计算结果显示在输入框下方；
