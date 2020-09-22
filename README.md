@@ -26,6 +26,8 @@ Go 语言在 1.11 版本(2018年8月) 加入了对 WebAssembly (Wasm) 的原生�
 
 **同时，Go 语言内置了 [syscall/js](https://github.com/golang/go/tree/master/src/syscall/js) 包，可以在 Go 语言中直接调用 JavaScript 函数，包括对 DOM 树的操作!**
 
+<BR/>
+
 ## Goland中使用Web-Assembly
 
 在Goland中进行开发时需要进行一些简单的配置；
@@ -34,11 +36,15 @@ Goland官方文档也说明了如何配置：
 
 https://www.jetbrains.com/help/go/webassembly-project.html
 
+<BR/>
+
 ## Hello World
 
 使用wasm实现的一个通知alert的例子；
 
 见：https://github.com/JasonkayZK/go-assembly/tree/hello-world
+
+<BR/>
 
 ## 注册函数(Register Functions)
 
@@ -46,9 +52,20 @@ https://www.jetbrains.com/help/go/webassembly-project.html
 
 见：https://github.com/JasonkayZK/go-assembly/tree/register-function
 
+<BR/>
+
 ## 操作DOM
 
 在Go中操作DOM；
 
 见：https://github.com/JasonkayZK/go-assembly/tree/operate-dom
 
+<BR/>
+
+## 回调函数(Callback Functions)
+
+ 在 JavaScript 中，异步+回调是非常常见的，比如请求一个 Restful API，注册一个回调函数，待数据获取到，再执行回调函数的逻辑，这个期间程序可以继续做其他的事情；
+
+Go 语言可以通过协程实现异步，进而简化编程；
+
+见：https://github.com/JasonkayZK/go-assembly/tree/callback-function
