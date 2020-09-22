@@ -16,7 +16,11 @@
 
 Go 语言在 1.11 版本(2018年8月) 加入了对 WebAssembly (Wasm) 的原生支持，使用 Go 语言开发  WebAssembly 相关的应用变得更加地简单，Go 语言的内建支持是 Go 语言进军前端的一个重要的里程碑。
 
-在这之前，如果想使用 Go  语言开发前端，需要使用 [GopherJS](https://github.com/gopherjs/gopherjs)，GopherJS 是一个编译器，可以将 Go 语言转换成可以在浏览器中运行的 JavaScript 代码。**新版本的 Go 则直接将 Go 代码编译为 wasm  二进制文件，而不再需要转为 JavaScript 代码。**更巧的是，实现 GopherJS 和在 Go 语言中内建支持 WebAssembly  的是同一拨人。
+在这之前，如果想使用 Go  语言开发前端，需要使用 [GopherJS](https://github.com/gopherjs/gopherjs)，GopherJS 是一个编译器，可以将 Go 语言转换成可以在浏览器中运行的 JavaScript 代码。
+
+**新版本的 Go 则直接将 Go 代码编译为 wasm  二进制文件，而不再需要转为 JavaScript 代码。**
+
+更巧的是，实现 GopherJS 和在 Go 语言中内建支持 WebAssembly  的是同一拨人。
 
 **Go 语言实现的函数可以直接导出供 JavaScript 代码调用**
 
