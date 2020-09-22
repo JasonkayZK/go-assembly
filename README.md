@@ -36,7 +36,9 @@ https://www.jetbrains.com/help/go/webassembly-project.html
 
 见：https://github.com/JasonkayZK/go-assembly/tree/hello-world
 
+## 注册函数(Register Functions)
 
+在Go中注册JS函数，以便其他 JavaScript 代码调用 ；
 
-
+见：https://github.com/JasonkayZK/go-assembly/tree/register-function
 
