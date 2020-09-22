@@ -1,7 +1,15 @@
 package main
 
 import (
+	"strconv"
 	"syscall/js"
+)
+
+var (
+	document = js.Global().Get("document")
+	numEle   = document.Call("getElementById", "num")
+	ansEle   = document.Call("getElementById", "ans")
+	btnEle   = js.Global().Get("btn")
 )
 
 func fib(i int) int {
@@ -12,11 +20,14 @@ func fib(i int) int {
 }
 
 func fibFunc(this js.Value, args []js.Value) interface{} {
-	return js.ValueOf(fib(args[0].Int()))
+	if num, err := strconv.Atoi(numEle.Get("value").String()); err == nil {
+		ansEle.Set("innerHTML", js.ValueOf(fib(num)))
+	}
+	return nil
 }
 
 func main() {
 	done := make(chan int, 0)
-	js.Global().Set("fibFunc", js.FuncOf(fibFunc))
+	btnEle.Call("addEventListener", "click", js.FuncOf(fibFunc))
 	<-done
 }

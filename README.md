@@ -1,16 +1,33 @@
 # Go-Assembly简明教程
 
-## 注册函数(Register Functions)
+## 操作DOM
 
-在 Go 语言中调用 JavaScript 函数是一方面，另一方面，如果仅仅是使用 WebAssembly 替代性能要求高的模块，那么就需要注册函数，以便其他 JavaScript 代码调用。
+在[注册函数(Register Functions)](https://github.com/JasonkayZK/go-assembly/tree/register-function)例子中，仅仅是注册了全局函数 fibFunc，事件注册，调用，对 DOM 元素的操作都是在 HTML中通过原生的 JavaScript 函数实现的。
 
-假设我们需要注册一个计算斐波那契数列的函数，可以这么实现：
+这些事情，能不能全部在 Go 语言中完成呢？答案可以。
+
+首先修改 index.html，删除事件注册部分和 对 DOM 元素的操作部分。
+
+```html
+<html>
+...
+<body>
+	<input id="num" type="number" />
+	<button id="btn">Click</button>
+	<p id="ans">1</p>
+</body>
+</html>
+```
+
+修改 main.go：
 
 ```go
-// main.go
 package main
 
-import "syscall/js"
+import (
+	"strconv"
+	"syscall/js"
+)
 
 func fib(i int) int {
 	if i == 0 || i == 1 {
@@ -19,59 +36,31 @@ func fib(i int) int {
 	return fib(i-1) + fib(i-2)
 }
 
+var (
+	document = js.Global().Get("document")
+	numEle   = document.Call("getElementById", "num")
+	ansEle   = document.Call("getElementById", "ans")
+	btnEle   = js.Global().Get("btn")
+)
+
 func fibFunc(this js.Value, args []js.Value) interface{} {
-	return js.ValueOf(fib(args[0].Int()))
+	v := numEle.Get("value")
+	if num, err := strconv.Atoi(v.String()); err == nil {
+		ansEle.Set("innerHTML", js.ValueOf(fib(num)))
+	}
+	return nil
 }
 
 func main() {
 	done := make(chan int, 0)
-	js.Global().Set("fibFunc", js.FuncOf(fibFunc))
+	btnEle.Call("addEventListener", "click", js.FuncOf(fibFunc))
 	<-done
 }
 ```
 
--   fib 是一个普通的 Go 函数，通过递归计算第 i 个斐波那契数，接收一个 int 入参，返回值也是 int。
--   定义了 fibFunc 函数，为 fib 函数套了一个壳，从 args[0] 获取入参，计算结果用 js.ValueOf 包装，并返回。
--   使用 js.Global().Set() 方法，将注册函数 fibFunc 到全局，以便在浏览器中能够调用。
+-   通过 `js.Global().Get("btn")` 或 `document.Call("getElementById", "num")` 两种方式获取到 DOM 元素。
+-   btnEle 调用 `addEventListener` 为 btn 绑定点击事件 fibFunc。
+-   在 fibFunc 中使用 `numEle.Get("value")` 获取到 numEle 的值（字符串），转为整型并调用 fib 计算出结果。
+-   ansEle 调用 `Set("innerHTML", ...)` 渲染计算结果。
 
-`js.Value` 可以将 Js 的值转换为 Go 的值，比如 args[0].Int()，则是转换为 Go 语言中的整型。
-
-`js.ValueOf`，则用来将 Go 的值，转换为 Js 的值。
-
-另外，注册函数的时候，使用 js.FuncOf 将函数转换为 `Func` 类型，只有 Func 类型的函数，才能在 JavaScript 中调用。可以认为这是 Go 与 JavaScript 之间的接口/约定。
-
-`js.Func()` 接受一个函数类型作为其参数，该函数的定义必须是：
-
-```go
-func(this Value, args []Value) interface{}
-// this 即 JavaScript 中的 this
-// args 是在 JavaScript 中调用该函数的参数列表。
-// 返回值需用 js.ValueOf 映射成 JavaScript 的值
-```
-
-在 main 函数中，创建了信道(chan) done，阻塞主协程(goroutine)；
-
-fibFunc 如果在 JavaScript 中被调用，会开启一个新的子协程执行：
-
->   A wrapped function triggered during a call from Go to JavaScript gets executed on the same goroutine.
->
->   A wrapped function triggered by  JavaScript’s event loop gets executed on an extra goroutine.  —— [FuncOf - golang.org](https://golang.org/pkg/syscall/js/#FuncOf)
-
-接下来，修改之前的 index.html，在其中添加一个输入框(num)，一个按钮(btn) 和一个文本框(ans，用来显示计算结果)，并给按钮添加了一个点击事件，调用 fibFunc，并将计算结果显示在文本框(ans)中。
-
-```html
-<html>
-...
-<body>
-	<input id="num" type="number" />
-	<button id="btn" onclick="ans.innerHTML=fibFunc(num.value * 1)">Click</button>
-	<p id="ans">1</p>
-</body>
-</html>
-```
-
-使用之前的命令重新编译 main.go，并在 9999 端口启动 Web 服务，如果我们已经将命令写在 Makefile 中了，只需要运行 `make` 即可；
-
-接下来访问 localhost:9999，可以看到效果：
-
-输入一个数字，点击`Click`，计算结果显示在输入框下方；
+重新编译 main.go，访问 localhost:9999，效果与之前是一致的！
